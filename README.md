@@ -56,3 +56,4 @@ Painel Kanban: visualização de tarefas organizadas por status (a fazer, em and
 - Task
 - Sprint
 - Comentario
+- Tabela de Roles (Controle de Role para cada usuario em cada projeto)
