@@ -3,14 +3,13 @@ import { Task } from "../models/Task";
 import { Project } from "../models/Project";
 import { Sprint } from "../models/Sprint";
 import { User } from "../models/User";
+import { ProjectMember, ProjectRole } from "../models/ProjectMember";
 import {
   AuthUser,
   ForbiddenError,
   NotFoundError,
   assertAuthenticated,
-  assertManagerOrAdmin,
   isAdmin,
-  isMember,
 } from "./utils";
 
 export type CreateTaskInput = {
@@ -39,7 +38,8 @@ export class TaskService {
     private taskRepo: Repository<Task>,
     private projectRepo: Repository<Project>,
     private sprintRepo: Repository<Sprint>,
-    private userRepo: Repository<User>
+    private userRepo: Repository<User>,
+    private memberRepo: Repository<ProjectMember>
   ) {}
 
   private async assertCanManageProject(
@@ -51,32 +51,19 @@ export class TaskService {
       throw new NotFoundError("Project not found");
     }
 
-    if (!isAdmin(currentUser) && project.ownerId !== currentUser.id) {
-      throw new ForbiddenError("Only project owner can manage tasks");
-    }
-
-    return project;
-  }
-
-  private async assertCanViewProject(
-    projectId: number,
-    currentUser?: AuthUser
-  ): Promise<Project> {
-    const project = await this.projectRepo.findOneBy({ id: projectId });
-    if (!project) {
-      throw new NotFoundError("Project not found");
-    }
-
-    if (project.isPublic) {
+    if (isAdmin(currentUser) || project.ownerId === currentUser.id) {
       return project;
     }
 
-    if (!currentUser) {
-      throw new ForbiddenError("Authentication required");
-    }
-
-    if (!isAdmin(currentUser) && project.ownerId !== currentUser.id) {
+    const membership = await this.memberRepo.findOneBy({
+      projectId,
+      userId: currentUser.id,
+    });
+    if (!membership) {
       throw new ForbiddenError("You do not have access to this project");
+    }
+    if (membership.role !== ProjectRole.Admin && membership.role !== ProjectRole.Manager) {
+      throw new ForbiddenError("Manager or admin access required");
     }
 
     return project;
@@ -108,17 +95,33 @@ export class TaskService {
       throw new NotFoundError("Project not found");
     }
 
-    if (!currentUser || project.isPublic || isAdmin(currentUser)) {
+    if (project.isPublic) {
       return this.taskRepo.find({ where: { projectId } });
     }
 
-    if (project.ownerId === currentUser.id) {
+    if (!currentUser) {
+      throw new ForbiddenError("Authentication required");
+    }
+
+    if (isAdmin(currentUser) || project.ownerId === currentUser.id) {
       return this.taskRepo.find({ where: { projectId } });
     }
 
-    return this.taskRepo.find({
-      where: { projectId, assigneeId: currentUser.id },
+    const membership = await this.memberRepo.findOneBy({
+      projectId,
+      userId: currentUser.id,
     });
+    if (!membership) {
+      throw new ForbiddenError("You do not have access to this project");
+    }
+
+    if (membership.role === ProjectRole.Member) {
+      return this.taskRepo.find({
+        where: { projectId, assigneeId: currentUser.id },
+      });
+    }
+
+    return this.taskRepo.find({ where: { projectId } });
   }
 
   async getById(id: number, currentUser?: AuthUser): Promise<Task> {
@@ -127,18 +130,36 @@ export class TaskService {
       throw new NotFoundError("Task not found");
     }
 
-    try {
-      await this.assertCanViewProject(task.projectId, currentUser);
-      return task;
-    } catch (error) {
-      if (!currentUser) {
-        throw error;
-      }
-      if (task.assigneeId === currentUser.id) {
-        return task;
-      }
-      throw error;
+    const project = await this.projectRepo.findOneBy({ id: task.projectId });
+    if (!project) {
+      throw new NotFoundError("Project not found");
     }
+
+    if (project.isPublic) {
+      return task;
+    }
+
+    if (!currentUser) {
+      throw new ForbiddenError("Authentication required");
+    }
+
+    if (isAdmin(currentUser) || project.ownerId === currentUser.id) {
+      return task;
+    }
+
+    const membership = await this.memberRepo.findOneBy({
+      projectId: project.id,
+      userId: currentUser.id,
+    });
+    if (!membership) {
+      throw new ForbiddenError("You do not have access to this project");
+    }
+
+    if (membership.role === ProjectRole.Member && task.assigneeId !== currentUser.id) {
+      throw new ForbiddenError("You can only view your own tasks");
+    }
+
+    return task;
   }
 
   async createTask(
@@ -146,7 +167,6 @@ export class TaskService {
     currentUser?: AuthUser
   ): Promise<Task> {
     assertAuthenticated(currentUser);
-    assertManagerOrAdmin(currentUser);
 
     const project = await this.assertCanManageProject(input.projectId, currentUser);
 
@@ -184,7 +204,16 @@ export class TaskService {
       throw new NotFoundError("Task not found");
     }
 
-    if (isMember(currentUser)) {
+    const membership = await this.memberRepo.findOneBy({
+      projectId: task.projectId,
+      userId: currentUser.id,
+    });
+
+    if (!isAdmin(currentUser) && !membership && task.assigneeId !== currentUser.id) {
+      throw new ForbiddenError("You do not have access to this task");
+    }
+
+    if (membership?.role === ProjectRole.Member || (!membership && task.assigneeId === currentUser.id)) {
       if (task.assigneeId !== currentUser.id) {
         throw new ForbiddenError("You can only update your own tasks");
       }
@@ -198,7 +227,6 @@ export class TaskService {
         throw new ForbiddenError("Members can only update task status");
       }
     } else {
-      assertManagerOrAdmin(currentUser);
       await this.assertCanManageProject(task.projectId, currentUser);
 
       if (input.sprintId !== undefined && input.sprintId !== null) {
@@ -222,7 +250,6 @@ export class TaskService {
 
   async deleteTask(id: number, currentUser?: AuthUser): Promise<void> {
     assertAuthenticated(currentUser);
-    assertManagerOrAdmin(currentUser);
 
     const task = await this.taskRepo.findOneBy({ id });
     if (!task) {

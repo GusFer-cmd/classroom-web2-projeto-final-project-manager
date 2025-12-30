@@ -2,7 +2,7 @@ import { UserRole } from "../models/User";
 
 export type AuthUser = {
   id: number;
-  role: UserRole;
+  role?: UserRole;
 };
 
 export class ForbiddenError extends Error {
@@ -24,8 +24,6 @@ export class NotFoundError extends Error {
 }
 
 export const isAdmin = (user: AuthUser) => user.role === UserRole.Admin;
-export const isManager = (user: AuthUser) => user.role === UserRole.Manager;
-export const isMember = (user: AuthUser) => user.role === UserRole.Member;
 
 export function assertAuthenticated(
   user?: AuthUser | null
@@ -38,11 +36,5 @@ export function assertAuthenticated(
 export const assertAdmin = (user: AuthUser) => {
   if (!isAdmin(user)) {
     throw new ForbiddenError("Admin access required");
-  }
-};
-
-export const assertManagerOrAdmin = (user: AuthUser) => {
-  if (!isAdmin(user) && !isManager(user)) {
-    throw new ForbiddenError("Manager or admin access required");
   }
 };

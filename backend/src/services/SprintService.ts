@@ -1,12 +1,12 @@
 import { Repository } from "typeorm";
 import { Sprint } from "../models/Sprint";
 import { Project } from "../models/Project";
+import { ProjectMember, ProjectRole } from "../models/ProjectMember";
 import {
   AuthUser,
   ForbiddenError,
   NotFoundError,
   assertAuthenticated,
-  assertManagerOrAdmin,
   isAdmin,
 } from "./utils";
 
@@ -26,7 +26,8 @@ export type UpdateSprintInput = {
 export class SprintService {
   constructor(
     private sprintRepo: Repository<Sprint>,
-    private projectRepo: Repository<Project>
+    private projectRepo: Repository<Project>,
+    private memberRepo: Repository<ProjectMember>
   ) {}
 
   private async assertCanManageProject(
@@ -38,8 +39,19 @@ export class SprintService {
       throw new NotFoundError("Project not found");
     }
 
-    if (!isAdmin(currentUser) && project.ownerId !== currentUser.id) {
-      throw new ForbiddenError("Only project owner can manage sprints");
+    if (isAdmin(currentUser) || project.ownerId === currentUser.id) {
+      return project;
+    }
+
+    const membership = await this.memberRepo.findOneBy({
+      projectId,
+      userId: currentUser.id,
+    });
+    if (!membership) {
+      throw new ForbiddenError("You do not have access to this project");
+    }
+    if (membership.role !== ProjectRole.Admin && membership.role !== ProjectRole.Manager) {
+      throw new ForbiddenError("Manager or admin access required");
     }
 
     return project;
@@ -62,7 +74,15 @@ export class SprintService {
       throw new ForbiddenError("Authentication required");
     }
 
-    if (!isAdmin(currentUser) && project.ownerId !== currentUser.id) {
+    if (isAdmin(currentUser) || project.ownerId === currentUser.id) {
+      return project;
+    }
+
+    const membership = await this.memberRepo.findOneBy({
+      projectId,
+      userId: currentUser.id,
+    });
+    if (!membership) {
       throw new ForbiddenError("You do not have access to this project");
     }
 
@@ -93,7 +113,6 @@ export class SprintService {
     currentUser?: AuthUser
   ): Promise<Sprint> {
     assertAuthenticated(currentUser);
-    assertManagerOrAdmin(currentUser);
 
     const project = await this.assertCanManageProject(input.projectId, currentUser);
 
@@ -114,7 +133,6 @@ export class SprintService {
     currentUser?: AuthUser
   ): Promise<Sprint> {
     assertAuthenticated(currentUser);
-    assertManagerOrAdmin(currentUser);
 
     const sprint = await this.sprintRepo.findOneBy({ id });
     if (!sprint) {
@@ -132,7 +150,6 @@ export class SprintService {
 
   async deleteSprint(id: number, currentUser?: AuthUser): Promise<void> {
     assertAuthenticated(currentUser);
-    assertManagerOrAdmin(currentUser);
 
     const sprint = await this.sprintRepo.findOneBy({ id });
     if (!sprint) {

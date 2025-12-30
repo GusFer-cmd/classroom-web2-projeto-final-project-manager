@@ -4,9 +4,8 @@ import { AuthUser } from "../services/utils";
 
 export const getAuthUser = (req: Request): AuthUser | undefined => {
   const idHeader = req.header("x-user-id");
-  const roleHeader = req.header("x-user-role");
 
-  if (!idHeader || !roleHeader) {
+  if (!idHeader) {
     return undefined;
   }
 
@@ -15,9 +14,14 @@ export const getAuthUser = (req: Request): AuthUser | undefined => {
     return undefined;
   }
 
+  const roleHeader = req.header("x-user-role");
+  if (!roleHeader) {
+    return { id };
+  }
+
   const role = roleHeader.toLowerCase() as UserRole;
   if (!Object.values(UserRole).includes(role)) {
-    return undefined;
+    return { id };
   }
 
   return { id, role };

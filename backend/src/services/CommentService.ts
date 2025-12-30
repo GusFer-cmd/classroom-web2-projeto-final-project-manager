@@ -2,6 +2,7 @@ import { Repository } from "typeorm";
 import { Comment } from "../models/Comment";
 import { Task } from "../models/Task";
 import { Project } from "../models/Project";
+import { ProjectMember } from "../models/ProjectMember";
 import {
   AuthUser,
   ForbiddenError,
@@ -23,7 +24,8 @@ export class CommentService {
   constructor(
     private commentRepo: Repository<Comment>,
     private taskRepo: Repository<Task>,
-    private projectRepo: Repository<Project>
+    private projectRepo: Repository<Project>,
+    private memberRepo: Repository<ProjectMember>
   ) {}
 
   private async assertCanViewTask(task: Task, currentUser?: AuthUser) {
@@ -41,6 +43,14 @@ export class CommentService {
     }
 
     if (isAdmin(currentUser) || project.ownerId === currentUser.id) {
+      return;
+    }
+
+    const membership = await this.memberRepo.findOneBy({
+      projectId: project.id,
+      userId: currentUser.id,
+    });
+    if (membership) {
       return;
     }
 

@@ -1,5 +1,5 @@
 import { Repository } from "typeorm";
-import { User, UserRole } from "../models/User";
+import { User } from "../models/User";
 import {
   AuthUser,
   ForbiddenError,
@@ -12,13 +12,11 @@ import {
 export type CreateUserInput = {
   name: string;
   email: string;
-  role?: UserRole;
 };
 
 export type UpdateUserInput = {
   name?: string;
   email?: string;
-  role?: UserRole;
 };
 
 export class UserService {
@@ -28,7 +26,6 @@ export class UserService {
     const user = this.userRepo.create({
       name: input.name,
       email: input.email,
-      role: UserRole.Member,
     });
 
     return this.userRepo.save(user);
@@ -41,7 +38,6 @@ export class UserService {
     const user = this.userRepo.create({
       name: input.name,
       email: input.email,
-      role: input.role ?? UserRole.Member,
     });
 
     return this.userRepo.save(user);
@@ -78,10 +74,6 @@ export class UserService {
 
     if (!isAdmin(currentUser) && currentUser.id !== id) {
       throw new ForbiddenError("You can only update your own user");
-    }
-
-    if (input.role && !isAdmin(currentUser)) {
-      throw new ForbiddenError("Only admin can change roles");
     }
 
     const user = await this.userRepo.findOneBy({ id });

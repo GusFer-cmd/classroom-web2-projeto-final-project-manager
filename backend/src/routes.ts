@@ -5,6 +5,7 @@ import { Project } from "./models/Project";
 import { Sprint } from "./models/Sprint";
 import { Task } from "./models/Task";
 import { Comment } from "./models/Comment";
+import { ProjectMember } from "./models/ProjectMember";
 import { UserService } from "./services/UserService";
 import { ProjectService } from "./services/ProjectService";
 import { SprintService } from "./services/SprintService";
@@ -22,22 +23,26 @@ export const createRouter = (dataSource: DataSource) => {
   const userService = new UserService(dataSource.getRepository(User));
   const projectService = new ProjectService(
     dataSource.getRepository(Project),
-    dataSource.getRepository(User)
+    dataSource.getRepository(User),
+    dataSource.getRepository(ProjectMember)
   );
   const sprintService = new SprintService(
     dataSource.getRepository(Sprint),
-    dataSource.getRepository(Project)
+    dataSource.getRepository(Project),
+    dataSource.getRepository(ProjectMember)
   );
   const taskService = new TaskService(
     dataSource.getRepository(Task),
     dataSource.getRepository(Project),
     dataSource.getRepository(Sprint),
-    dataSource.getRepository(User)
+    dataSource.getRepository(User),
+    dataSource.getRepository(ProjectMember)
   );
   const commentService = new CommentService(
     dataSource.getRepository(Comment),
     dataSource.getRepository(Task),
-    dataSource.getRepository(Project)
+    dataSource.getRepository(Project),
+    dataSource.getRepository(ProjectMember)
   );
 
   const userController = new UserController(userService);

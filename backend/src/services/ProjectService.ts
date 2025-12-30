@@ -1,12 +1,12 @@
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { Project } from "../models/Project";
 import { User } from "../models/User";
+import { ProjectMember, ProjectRole } from "../models/ProjectMember";
 import {
   AuthUser,
   ForbiddenError,
   NotFoundError,
   assertAuthenticated,
-  assertManagerOrAdmin,
   isAdmin,
 } from "./utils";
 
@@ -27,7 +27,8 @@ export type UpdateProjectInput = {
 export class ProjectService {
   constructor(
     private projectRepo: Repository<Project>,
-    private userRepo: Repository<User>
+    private userRepo: Repository<User>,
+    private memberRepo: Repository<ProjectMember>
   ) {}
 
   async listPublicProjects(): Promise<Project[]> {
@@ -43,9 +44,17 @@ export class ProjectService {
       return this.projectRepo.find();
     }
 
-    return this.projectRepo.find({
-      where: [{ isPublic: true }, { ownerId: currentUser.id }],
+    const memberships = await this.memberRepo.find({
+      where: { userId: currentUser.id },
     });
+    const memberProjectIds = memberships.map((member) => member.projectId);
+
+    const where = [{ isPublic: true }, { ownerId: currentUser.id }];
+    if (memberProjectIds.length) {
+      where.push({ id: In(memberProjectIds) });
+    }
+
+    return this.projectRepo.find({ where });
   }
 
   async getById(id: number, currentUser?: AuthUser): Promise<Project> {
@@ -62,7 +71,15 @@ export class ProjectService {
       throw new ForbiddenError("Authentication required");
     }
 
-    if (!isAdmin(currentUser) && project.ownerId !== currentUser.id) {
+    if (isAdmin(currentUser) || project.ownerId === currentUser.id) {
+      return project;
+    }
+
+    const membership = await this.memberRepo.findOneBy({
+      projectId: project.id,
+      userId: currentUser.id,
+    });
+    if (!membership) {
       throw new ForbiddenError("You do not have access to this project");
     }
 
@@ -74,7 +91,6 @@ export class ProjectService {
     currentUser?: AuthUser
   ): Promise<Project> {
     assertAuthenticated(currentUser);
-    assertManagerOrAdmin(currentUser);
 
     let ownerId = currentUser.id;
     if (input.ownerId !== undefined) {
@@ -97,7 +113,16 @@ export class ProjectService {
       ownerId: owner.id,
     });
 
-    return this.projectRepo.save(project);
+    const savedProject = await this.projectRepo.save(project);
+
+    const membership = this.memberRepo.create({
+      projectId: savedProject.id,
+      userId: owner.id,
+      role: ProjectRole.Admin,
+    });
+    await this.memberRepo.save(membership);
+
+    return savedProject;
   }
 
   async updateProject(
@@ -106,16 +131,13 @@ export class ProjectService {
     currentUser?: AuthUser
   ): Promise<Project> {
     assertAuthenticated(currentUser);
-    assertManagerOrAdmin(currentUser);
 
     const project = await this.projectRepo.findOneBy({ id });
     if (!project) {
       throw new NotFoundError("Project not found");
     }
 
-    if (!isAdmin(currentUser) && project.ownerId !== currentUser.id) {
-      throw new ForbiddenError("Only project owner can update this project");
-    }
+    await this.assertCanManageProject(project.id, currentUser);
 
     if (input.ownerId !== undefined) {
       if (!isAdmin(currentUser)) {
@@ -139,17 +161,45 @@ export class ProjectService {
 
   async deleteProject(id: number, currentUser?: AuthUser): Promise<void> {
     assertAuthenticated(currentUser);
-    assertManagerOrAdmin(currentUser);
 
     const project = await this.projectRepo.findOneBy({ id });
     if (!project) {
       throw new NotFoundError("Project not found");
     }
 
-    if (!isAdmin(currentUser) && project.ownerId !== currentUser.id) {
-      throw new ForbiddenError("Only project owner can delete this project");
-    }
+    await this.assertCanManageProject(project.id, currentUser);
 
     await this.projectRepo.remove(project);
+  }
+
+  private async assertCanManageProject(
+    projectId: number,
+    currentUser: AuthUser
+  ) {
+    if (isAdmin(currentUser)) {
+      return;
+    }
+
+    const project = await this.projectRepo.findOneBy({ id: projectId });
+    if (!project) {
+      throw new NotFoundError("Project not found");
+    }
+
+    if (project.ownerId === currentUser.id) {
+      return;
+    }
+
+    const membership = await this.memberRepo.findOneBy({
+      projectId,
+      userId: currentUser.id,
+    });
+
+    if (!membership) {
+      throw new ForbiddenError("You do not have access to this project");
+    }
+
+    if (membership.role !== ProjectRole.Admin && membership.role !== ProjectRole.Manager) {
+      throw new ForbiddenError("Manager or admin access required");
+    }
   }
 }

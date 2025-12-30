@@ -11,6 +11,7 @@ import {
 import { User } from "./User";
 import { Task } from "./Task";
 import { Sprint } from "./Sprint";
+import { ProjectMember } from "./ProjectMember";
 
 @Entity("projects")
 export class Project {
@@ -38,6 +39,9 @@ export class Project {
 
   @OneToMany(() => Task, (task) => task.project)
   tasks!: Task[];
+
+  @OneToMany(() => ProjectMember, (membership) => membership.project)
+  members!: ProjectMember[];
 
   @CreateDateColumn()
   createdAt!: Date;
