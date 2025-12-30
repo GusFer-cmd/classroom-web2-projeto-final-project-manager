@@ -1,9 +1,11 @@
 import "reflect-metadata";
-import express, { ErrorRequestHandler, NextFunction, Request, Response } from "express";
+import express, { ErrorRequestHandler} from "express";
+import cors from "cors";
 import { AppDataSource } from "./data-source";
 import { createRouter } from "./routes";
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 8080;
