@@ -11,6 +11,11 @@ export const ProjectService = {
     return response.data
   },
 
+  async listMembers(projectId) {
+    const response = await api.get(`/projects/${projectId}/members`)
+    return response.data
+  },
+
   async create(data) {
     const response = await api.post('/projects', data);
     return response.data;

@@ -71,6 +71,7 @@ export const createRouter = (dataSource: DataSource) => {
 
   router.get("/projects", projectController.list);
   router.get("/projects/:id", projectController.getById);
+  router.get("/projects/:id/members", projectController.listMembers);
   router.post("/projects", projectController.create);
   router.put("/projects/:id", projectController.update);
   router.delete("/projects/:id", projectController.remove);

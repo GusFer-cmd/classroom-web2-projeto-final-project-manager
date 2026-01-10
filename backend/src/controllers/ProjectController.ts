@@ -26,6 +26,19 @@ export class ProjectController {
     }
   };
 
+  listMembers = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = Number(req.params.id);
+      const members = await this.projectService.listMembers(
+        id,
+        getAuthUser(req)
+      );
+      res.json(members);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   create = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const project = await this.projectService.createProject(

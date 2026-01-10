@@ -4,6 +4,8 @@ import { useRoute, useRouter } from "vue-router";
 import TaskForm from "../../components/TaskForm.vue";
 import Container from "../../components/Container.vue";
 import { TaskService } from "../../services/task/task.service";
+import { SprintService } from "../../services/sprint/sprint.service";
+import { ProjectService } from "../../services/project/project.service";
 
 const route = useRoute();
 const router = useRouter();
@@ -11,10 +13,21 @@ const router = useRouter();
 const sprintId = route.params.sprintId;
 
 const errors = ref({});
+const users = ref([]);
 
 function goBack() {
   router.push(`/tarefa/listar/${sprintId}`);
 }
+
+onMounted(async () => {
+  try {
+    const sprint = await SprintService.getById(sprintId);
+    users.value = await ProjectService.listMembers(sprint.projectId);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
 async function handleSubmit(payload) {
   errors.value = {};
 
@@ -44,6 +57,11 @@ async function handleSubmit(payload) {
     </div>
 
     <p v-if="formError" class="mb-3 text-sm text-red-600">{{ formError }}</p>
-      <TaskForm @submit="handleSubmit" :errors="errors" :sprintId="Number(sprintId)" />
+      <TaskForm
+        @submit="handleSubmit"
+        :errors="errors"
+        :sprintId="Number(sprintId)"
+        :users="users"
+      />
   </Container>
 </template>

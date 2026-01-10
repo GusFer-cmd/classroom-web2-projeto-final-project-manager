@@ -60,6 +60,21 @@ export class ProjectService {
     return this.projectRepo.find({ where });
   }
 
+  async listMembers(
+    projectId: number,
+    currentUser?: AuthUser
+  ): Promise<User[]> {
+    assertAuthenticated(currentUser);
+    await this.assertCanManageProject(projectId, currentUser);
+
+    const memberships = await this.memberRepo.find({
+      where: { projectId },
+      relations: { user: true },
+    });
+
+    return memberships.map((membership) => membership.user);
+  }
+
   async getById(id: number, currentUser?: AuthUser): Promise<Project> {
     const project = await this.projectRepo.findOneBy({ id });
     if (!project) {
