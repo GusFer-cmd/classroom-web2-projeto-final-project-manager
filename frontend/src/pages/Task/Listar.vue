@@ -1,7 +1,7 @@
 <script setup>
 import Container from '@/components/Container.vue';
 import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { TaskService } from '../../services/task/task.service';
 import { SprintService } from '../../services/sprint/sprint.service';
 
@@ -12,6 +12,7 @@ const props = defineProps({
 });
 
 const route = useRoute();
+const router = useRouter();
 
 const sprintId = Number(route.params.sprintId);
 
@@ -23,6 +24,23 @@ const sprint = ref({
 });
 
 const tasks = ref([]);
+
+async function handleDelete(id) {
+
+  const confirmed = confirm('Deseja realmente excluir está tarefa?')
+  if (!confirmed) return
+
+  try {
+    const res = await TaskService.delete(id)
+    console.log('Resposta da API:', res)
+
+    //router.replace({ name: 'Projects-listar' }) todo: mudar para futuramente emitir um estado e atualizar
+    router.go(0)
+
+  } catch (error) {
+    console.error('Erro no delete:', error)
+  }
+}
 
 onMounted(async () => {
     const id = route.params.sprintId;
@@ -79,7 +97,7 @@ onMounted(async () => {
                     <tr v-for="task in tasks" :key="task.id" class="hover:bg-gray-50 transition">
                         <td class="px-4 py-2 border">{{ task.title }}</td>
                         <td class="px-4 py-2 border">{{ task.status }}</td>
-                        <td class="px-4 py-2 border">{{ task.assigneedId }}</td>
+                        <td class="px-4 py-2 border">{{ task.assignee.name }}</td>
                         <td class="px-4 py-2 border">
                             <div class="flex flex-wrap justify-center gap-3">
                                 <router-link
@@ -90,14 +108,16 @@ onMounted(async () => {
                                     <span>Ver Comentarios</span>
                                 </router-link>
 
-                                <button 
+                                <router-link
+                                    :to="{ name: 'Tarefa-editar', params: { tarefaId: Number(task.id) } }"
                                     class="flex items-center justify-center w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-sm transition"
                                     title="Editar"
                                 >
                                     <i class="fa-solid fa-pencil"></i>
-                                </button>
+                                </router-link>
 
-                                <button 
+                                <button
+                                    @click="handleDelete(task.id)" 
                                     class="flex items-center justify-center w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-sm transition"
                                     title="Excluir"
                                 >

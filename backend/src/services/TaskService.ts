@@ -106,8 +106,15 @@ export class TaskService {
     const { project } = await this.getProjectForSprint(sprintId);
     const baseWhere = { sprintId };
 
+    const baseQuery = {
+      where: baseWhere,
+      relations: {
+        assignee: true,
+      },
+    };
+
     if (project.isPublic) {
-      return this.taskRepo.find({ where: baseWhere });
+      return this.taskRepo.find(baseQuery);
     }
 
     if (!currentUser) {
@@ -115,13 +122,14 @@ export class TaskService {
     }
 
     if (isAdmin(currentUser) || project.ownerId === currentUser.id) {
-      return this.taskRepo.find({ where: baseWhere });
+      return this.taskRepo.find(baseQuery);
     }
 
     const membership = await this.memberRepo.findOneBy({
       projectId: project.id,
       userId: currentUser.id,
     });
+
     if (!membership) {
       throw new ForbiddenError("You do not have access to this project");
     }
@@ -129,14 +137,21 @@ export class TaskService {
     if (membership.role === ProjectRole.Member) {
       return this.taskRepo.find({
         where: { ...baseWhere, assigneeId: currentUser.id },
+        relations: {
+          assignee: true,
+        },
       });
     }
 
-    return this.taskRepo.find({ where: baseWhere });
+    return this.taskRepo.find(baseQuery);
   }
 
   async getById(id: number, currentUser?: AuthUser): Promise<Task> {
-    const task = await this.taskRepo.findOneBy({ id });
+    const task = await this.taskRepo.findOne({ 
+      where: { id },
+      relations: ["assignee"],
+    });
+
     if (!task) {
       throw new NotFoundError("Task not found");
     }
