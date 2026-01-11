@@ -21,8 +21,8 @@ const emit = defineEmits(["submit"]);
 const form = reactive({
   title: "",
   description: "",
-  status: "todo",
-  priority: "medium",
+  status: "a fazer",
+  priority: "baixa",
   dueDate: "",
   assigneeId: "",
   sprintId: props.sprintId,
@@ -64,9 +64,9 @@ const form = reactive({
         class="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
         :class="errors.status ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'"
       >
-        <option value="todo">Todo</option>
-        <option value="in_progress">In progress</option>
-        <option value="done">Done</option>
+        <option value="a fazer">A fazer</option>
+        <option value="em progresso">Em progresso</option>
+        <option value="concluído">Concluído</option>
       </select>
       <p v-if="errors.status" class="mt-1 text-sm text-red-500">{{ errors.status }}</p>
     </div>
@@ -79,9 +79,9 @@ const form = reactive({
         class="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
         :class="errors.priority ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'"
       >
-        <option value="low">Baixa</option>
-        <option value="medium">Media</option>
-        <option value="high">Alta</option>
+        <option value="baixa">Baixa</option>
+        <option value="média">Média</option>
+        <option value="alta">Alta</option>
       </select>
       <p v-if="errors.priority" class="mt-1 text-sm text-red-500">{{ errors.priority }}</p>
     </div>

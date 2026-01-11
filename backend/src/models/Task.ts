@@ -39,12 +39,16 @@ export class Task {
   @Column({ type: "integer" })
   sprintId!: number;
 
-  @ManyToOne(() => User, (user) => user.tasks, { nullable: true })
-  @JoinColumn({ name: "assigneeId" })
-  assignee?: User | null;
-
   @Column({ type: "integer", nullable: true })
   assigneeId?: number | null;
+
+  @ManyToOne(() => User, user => user.tasks, {
+    nullable: true,
+    onDelete: "SET NULL",
+  })
+  
+  @JoinColumn({ name: "assigneeId" })
+  assignee?: User | null;
 
   @OneToMany(() => Comment, (comment) => comment.task)
   comments!: Comment[];
