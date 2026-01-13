@@ -85,7 +85,7 @@ async function handleSubmit() {
           </button>
 
           <router-link
-              to="/login"
+              to="/"
               class="block w-full text-center rounded-lg border border-blue-600 bg-white text-blue-600 font-semibold py-2 hover:bg-blue-50 transition"
           >
             Voltar
