@@ -27,8 +27,8 @@ function toggleDropdown() {
 
       <ul class="hidden md:flex gap-6 flex-1 justify-start items-center ml-6">
         <li>
-          <router-link to="/" class="text-white/95 font-medium hover:underline">
-            Home
+          <router-link to="/Dashboard" class="text-white/95 font-medium hover:underline">
+            Dashboard
           </router-link>
         </li>
 

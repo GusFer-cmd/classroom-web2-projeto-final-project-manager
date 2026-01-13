@@ -21,7 +21,7 @@ async function handleSubmit() {
     })
 
     auth.setAuth(response.data.token, response.data.user)
-    router.push('/')
+    router.push('/Dashboard')
   } catch (err) {
     error.value = 'Email ou senha invalidos.'
   }
