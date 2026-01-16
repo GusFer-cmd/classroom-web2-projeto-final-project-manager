@@ -35,7 +35,7 @@ export class ProjectService {
   ) {}
 
   async listPublicProjects(): Promise<Project[]> {
-    return this.projectRepo.find({ where: { isPublic: true } });
+    return this.projectRepo.find({ where: { isPublic: true }, relations: { owner: true } });
   }
 
   async listAccessibleProjects(currentUser?: AuthUser): Promise<Project[]> {
@@ -57,7 +57,7 @@ export class ProjectService {
       where.push({ id: In(memberProjectIds) });
     }
 
-    return this.projectRepo.find({ where });
+    return this.projectRepo.find({ where, relations: { owner: true } });
   }
 
   async listMembers(
@@ -76,7 +76,10 @@ export class ProjectService {
   }
 
   async getById(id: number, currentUser?: AuthUser): Promise<Project> {
-    const project = await this.projectRepo.findOneBy({ id });
+    const project = await this.projectRepo.findOne({
+      where: { id },
+      relations: { owner: true },
+    });
     if (!project) {
       throw new NotFoundError("Project not found");
     }

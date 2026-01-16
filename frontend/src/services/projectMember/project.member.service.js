@@ -17,11 +17,11 @@ export const ProjectMemberService = {
   },
 
   async update(projectId, userId, data) {
-    const response = await api.put(`/members/${projectId}${userId}`, data);
+    const response = await api.put(`/members/${projectId}/${userId}`, data);
     return response.data;
   },
 
   async delete(projectId, userId) {
-    await api.delete(`/members/${projectId}${userId}`);
+    await api.delete(`/members/${projectId}/${userId}`);
   },
 };

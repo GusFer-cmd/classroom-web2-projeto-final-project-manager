@@ -38,6 +38,9 @@ onMounted(async () => {
     <div class="max-w-sm p-5 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700">
         <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{ props.project.name }}</h5>
         <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">{{ props.project.description }}</p>
+        <p v-if="props.project.owner" class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+            Criado por: {{ props.project.owner.name }}
+        </p>
         <div class="flex gap-2">
             <router-link
                 v-if="canAddMembers"

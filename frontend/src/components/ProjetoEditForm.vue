@@ -9,6 +9,10 @@ const props = defineProps({
     project: {
         type: Object,
         required: true
+    },
+    disabled: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -43,6 +47,7 @@ watch(
             :class="errors.name
                 ? 'border-red-500 focus:ring-red-500'
                 : 'border-gray-300 focus:ring-blue-500'" id="name" v-model="form.name" 
+            :disabled="disabled"
             />
 
             <p v-if="errors.name" class="mt-1 text-sm text-red-500">{{ errors.name }}</p>
@@ -54,6 +59,7 @@ watch(
             :class="errors.description
                 ? 'border-red-500 focus:ring-red-500'
                 : 'border-gray-300 focus:ring-blue-500'"
+            :disabled="disabled"
             >
             </textarea>
 
@@ -62,7 +68,7 @@ watch(
 
         <div class="mb-3">
             <label for="isPublic" class="form-label">Visibilidade</label>
-                <select name="isPublic" class="form-select" :class="{ 'is-invalid': errors.status }" id="isPublic" v-model="form.isPublic">
+                <select name="isPublic" class="form-select" :class="{ 'is-invalid': errors.status }" id="isPublic" v-model="form.isPublic" :disabled="disabled">
                     <option :value="true">Publico</option>
                     <option :value="false">Privado</option>
                 </select>
@@ -70,7 +76,11 @@ watch(
             <div class="invalid-feedback" v-if="errors.status">{{ errors.status }}</div>
         </div>
 
-        <button type="submit" class="w-full rounded-xl bg-blue-600 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        <button
+            v-if="!disabled"
+            type="submit"
+            class="w-full rounded-xl bg-blue-600 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
             Atualizar
         </button>
     </form>
