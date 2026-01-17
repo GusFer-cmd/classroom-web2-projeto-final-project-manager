@@ -39,9 +39,9 @@ async function handleSubmit(payload) {
       if (message) {
         const normalized = String(message).toLowerCase();
         if (normalized.includes("title")) {
-          errors.value = { title: message };
+          errors.value = { title: [message] };
         } else {
-          errors.value = { general: message };
+          errors.value = { general: [message] };
         }
         return;
       }

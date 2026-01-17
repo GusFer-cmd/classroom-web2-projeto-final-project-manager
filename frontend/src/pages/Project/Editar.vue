@@ -125,11 +125,11 @@ async function handleSubmit(payload) {
         if (message) {
             const normalized = String(message).toLowerCase();
             if (normalized.includes("name")) {
-                errors.value = { name: message };
+                errors.value = { name: [message] };
             } else if (normalized.includes("description")) {
-                errors.value = { description: message };
+                errors.value = { description: [message] };
             } else {
-                errors.value = { general: message };
+                errors.value = { general: [message] };
             }
             return;
         }
