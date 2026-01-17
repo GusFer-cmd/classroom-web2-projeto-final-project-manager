@@ -191,8 +191,14 @@ export class TaskService {
   ): Promise<Task> {
     assertAuthenticated(currentUser);
 
+    if (!input.title || input.title.trim().length === 0) {
+      throw new BadRequestError("Task title is required");
+    }
+
     const { sprint, project } = await this.getProjectForSprint(input.sprintId);
-    await this.assertCanManageProject(project.id, currentUser);
+    if (!project.isPublic) {
+      await this.assertCanManageProject(project.id, currentUser);
+    }
     if (input.assigneeId) {
       await this.validateAssignee(input.assigneeId);
     }
@@ -224,6 +230,32 @@ export class TaskService {
     }
 
     const currentProject = await this.getProjectForTask(task);
+    if (currentProject.isPublic) {
+      if (input.title !== undefined && input.title.trim().length === 0) {
+        throw new BadRequestError("Task title is required");
+      }
+
+      if (input.assigneeId !== undefined && input.assigneeId !== null) {
+        await this.validateAssignee(input.assigneeId);
+      }
+
+      if (input.sprintId !== undefined) {
+        const { project: nextProject } = await this.getProjectForSprint(input.sprintId);
+        if (nextProject.id !== currentProject.id) {
+          throw new ForbiddenError("Sprint does not belong to the project");
+        }
+      }
+
+      if (input.title !== undefined) task.title = input.title;
+      if (input.description !== undefined) task.description = input.description;
+      if (input.status !== undefined) task.status = input.status;
+      if (input.priority !== undefined) task.priority = input.priority;
+      if (input.dueDate !== undefined) task.dueDate = input.dueDate;
+      if (input.sprintId !== undefined) task.sprintId = input.sprintId;
+      if (input.assigneeId !== undefined) task.assigneeId = input.assigneeId;
+
+      return this.taskRepo.save(task);
+    }
     const membership = await this.memberRepo.findOneBy({
       projectId: currentProject.id,
       userId: currentUser.id,
@@ -234,6 +266,10 @@ export class TaskService {
     }
 
     if (membership?.role === ProjectRole.Member || (!membership && task.assigneeId === currentUser.id)) {
+      if (input.title !== undefined && input.title.trim().length === 0) {
+        throw new BadRequestError("Task title is required");
+      }
+
       if (task.assigneeId !== currentUser.id) {
         throw new ForbiddenError("You can only update your own tasks");
       }
@@ -248,6 +284,10 @@ export class TaskService {
       }
     } else {
       await this.assertCanManageProject(currentProject.id, currentUser);
+
+      if (input.title !== undefined && input.title.trim().length === 0) {
+        throw new BadRequestError("Task title is required");
+      }
 
       if (input.sprintId !== undefined) {
         const { project: nextProject } = await this.getProjectForSprint(input.sprintId);
@@ -280,7 +320,9 @@ export class TaskService {
     }
 
     const project = await this.getProjectForTask(task);
-    await this.assertCanManageProject(project.id, currentUser);
+    if (!project.isPublic) {
+      await this.assertCanManageProject(project.id, currentUser);
+    }
     await this.taskRepo.remove(task);
   }
 }

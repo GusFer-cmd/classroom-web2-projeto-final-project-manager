@@ -98,6 +98,7 @@ const isMember = computed(() => role.value === "member");
 
 <template>
   <form @submit.prevent="$emit('submit', form)" class="w-full bg-white p-6 rounded-2xl shadow-md space-y-5">
+    <p v-if="errors.general" class="text-sm text-red-500">{{ errors.general }}</p>
     <div v-if="isAdmin"> 
         <div class="mb-3">
           <label for="title" class="block text-sm font-medium text-gray-700">Titulo</label>

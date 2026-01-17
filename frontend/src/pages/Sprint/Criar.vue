@@ -29,11 +29,23 @@ async function handleSubmit(payload) {
     await SprintService.create(payload);
     router.push(`/sprint/listar/${projectId}`);
   } catch (error) {
+    const message = error?.response?.data?.message;
+    if (message) {
+      const normalized = String(message).toLowerCase();
+      if (normalized.includes("name")) {
+        errors.value = { name: message };
+      } else {
+        errors.value = { general: message };
+      }
+      return;
+    }
+
     if (error.response && error.response.status === 422) {
       errors.value = error.response.data.errors;
-    } else {
-      console.error(error);
+      return;
     }
+
+    console.error(error);
   }
 }
 </script>

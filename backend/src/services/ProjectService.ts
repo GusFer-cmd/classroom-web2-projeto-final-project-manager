@@ -7,6 +7,7 @@ import { User } from "../models/User";
 import { ProjectMember, ProjectRole } from "../models/ProjectMember";
 import {
   AuthUser,
+  BadRequestError,
   ForbiddenError,
   NotFoundError,
   assertAuthenticated,
@@ -113,6 +114,14 @@ export class ProjectService {
   ): Promise<Project> {
     assertAuthenticated(currentUser);
 
+    if (!input.name || input.name.trim().length === 0) {
+      throw new BadRequestError("Project name is required");
+    }
+
+    if (input.description === undefined || input.description === null || input.description.trim().length === 0) {
+      throw new BadRequestError("Project description is required");
+    }
+
     let ownerId = currentUser.id;
     if (input.ownerId !== undefined) {
       if (!isAdmin(currentUser)) {
@@ -173,8 +182,19 @@ export class ProjectService {
       project.owner = newOwner;
     }
 
-    if (input.name !== undefined) project.name = input.name;
-    if (input.description !== undefined) project.description = input.description;
+    if (input.name !== undefined) {
+      if (!input.name || input.name.trim().length === 0) {
+        throw new BadRequestError("Project name is required");
+      }
+      project.name = input.name;
+    }
+
+    if (input.description !== undefined) {
+      if (input.description === null || input.description.trim().length === 0) {
+        throw new BadRequestError("Project description is required");
+      }
+      project.description = input.description;
+    }
     if (input.isPublic !== undefined) project.isPublic = input.isPublic;
 
     return this.projectRepo.save(project);

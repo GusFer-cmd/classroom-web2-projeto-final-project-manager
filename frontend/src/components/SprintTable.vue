@@ -25,8 +25,7 @@ async function handleDelete(id) {
     const res = await SprintService.delete(id)
     console.log('Resposta da API:', res)
 
-    //router.replace({ name: 'Projects-listar' }) todo: mudar para futuramente emitir um estado e atualizar
-    router.go(0)
+    router.replace({ name: 'Projects-listar' }) 
 
   } catch (error) {
     console.error('Erro no delete:', error)
@@ -36,7 +35,7 @@ async function handleDelete(id) {
 const projectId = route.params.projectId
 
 function goBack() {
-    router.push("/")
+    router.push("/Dashboard")
 }
 
 </script>

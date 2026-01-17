@@ -6,6 +6,7 @@ import { Comment } from "../models/Comment";
 import { ProjectMember, ProjectRole } from "../models/ProjectMember";
 import {
   AuthUser,
+  BadRequestError,
   ForbiddenError,
   NotFoundError,
   assertAuthenticated,
@@ -116,7 +117,18 @@ export class SprintService {
   ): Promise<Sprint> {
     assertAuthenticated(currentUser);
 
-    const project = await this.assertCanManageProject(input.projectId, currentUser);
+    if (!input.name || input.name.trim().length === 0) {
+      throw new BadRequestError("Sprint name is required");
+    }
+
+    const project = await this.projectRepo.findOneBy({ id: input.projectId });
+    if (!project) {
+      throw new NotFoundError("Project not found");
+    }
+
+    if (!project.isPublic) {
+      await this.assertCanManageProject(project.id, currentUser);
+    }
 
     const sprint = this.sprintRepo.create({
       name: input.name,
@@ -141,9 +153,20 @@ export class SprintService {
       throw new NotFoundError("Sprint not found");
     }
 
-    await this.assertCanManageProject(sprint.projectId, currentUser);
+    const project = await this.projectRepo.findOneBy({ id: sprint.projectId });
+    if (!project) {
+      throw new NotFoundError("Project not found");
+    }
+    if (!project.isPublic) {
+      await this.assertCanManageProject(project.id, currentUser);
+    }
 
-    if (input.name !== undefined) sprint.name = input.name;
+    if (input.name !== undefined) {
+      if (!input.name || input.name.trim().length === 0) {
+        throw new BadRequestError("Sprint name is required");
+      }
+      sprint.name = input.name;
+    }
     if (input.startDate !== undefined) sprint.startDate = input.startDate;
     if (input.endDate !== undefined) sprint.endDate = input.endDate;
 
@@ -157,7 +180,13 @@ export class SprintService {
     throw new NotFoundError("Sprint not found");
   }
 
-  await this.assertCanManageProject(sprint.projectId, currentUser);
+  const project = await this.projectRepo.findOneBy({ id: sprint.projectId });
+  if (!project) {
+    throw new NotFoundError("Project not found");
+  }
+  if (!project.isPublic) {
+    await this.assertCanManageProject(project.id, currentUser);
+  }
 
   await this.sprintRepo.manager.transaction(async (trx) => {
       const taskRepo = trx.getRepository(Task);

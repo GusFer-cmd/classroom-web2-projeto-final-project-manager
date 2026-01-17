@@ -6,6 +6,7 @@ import { Sprint } from "../models/Sprint";
 import { ProjectMember } from "../models/ProjectMember";
 import {
   AuthUser,
+  BadRequestError,
   ForbiddenError,
   NotFoundError,
   assertAuthenticated,
@@ -106,10 +107,16 @@ export class CommentService {
   ): Promise<Comment> {
     assertAuthenticated(currentUser);
 
+    if (!input.content || input.content.trim().length === 0) {
+      throw new BadRequestError("Comment content is required");
+    }
+
     const task = await this.taskRepo.findOneBy({ id: input.taskId });
     if (!task) {
       throw new NotFoundError("Task not found");
     }
+
+    await this.assertCanViewTask(task, currentUser);
 
     const comment = this.commentRepo.create({
       content: input.content,
@@ -127,9 +134,37 @@ export class CommentService {
   ): Promise<Comment> {
     assertAuthenticated(currentUser);
 
+    if (!input.content || input.content.trim().length === 0) {
+      throw new BadRequestError("Comment content is required");
+    }
+
     const comment = await this.commentRepo.findOneBy({ id });
     if (!comment) {
       throw new NotFoundError("Comment not found");
+    }
+
+    const task = await this.taskRepo.findOneBy({ id: comment.taskId });
+    if (!task) {
+      throw new NotFoundError("Task not found");
+    }
+
+    if (!task.sprintId) {
+      throw new NotFoundError("Sprint not found");
+    }
+
+    const sprint = await this.sprintRepo.findOneBy({ id: task.sprintId });
+    if (!sprint) {
+      throw new NotFoundError("Sprint not found");
+    }
+
+    const project = await this.projectRepo.findOneBy({ id: sprint.projectId });
+    if (!project) {
+      throw new NotFoundError("Project not found");
+    }
+
+    if (project.isPublic) {
+      comment.content = input.content;
+      return this.commentRepo.save(comment);
     }
 
     if (!isAdmin(currentUser) && comment.authorId !== currentUser.id) {
@@ -146,6 +181,30 @@ export class CommentService {
     const comment = await this.commentRepo.findOneBy({ id });
     if (!comment) {
       throw new NotFoundError("Comment not found");
+    }
+
+    const task = await this.taskRepo.findOneBy({ id: comment.taskId });
+    if (!task) {
+      throw new NotFoundError("Task not found");
+    }
+
+    if (!task.sprintId) {
+      throw new NotFoundError("Sprint not found");
+    }
+
+    const sprint = await this.sprintRepo.findOneBy({ id: task.sprintId });
+    if (!sprint) {
+      throw new NotFoundError("Sprint not found");
+    }
+
+    const project = await this.projectRepo.findOneBy({ id: sprint.projectId });
+    if (!project) {
+      throw new NotFoundError("Project not found");
+    }
+
+    if (project.isPublic) {
+      await this.commentRepo.remove(comment);
+      return;
     }
 
     if (!isAdmin(currentUser) && comment.authorId !== currentUser.id) {
