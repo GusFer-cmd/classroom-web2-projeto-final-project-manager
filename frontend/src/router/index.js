@@ -15,12 +15,19 @@ import CriarComentario from '@/pages/Comment/Criar.vue'
 import EditarComentario from '@/pages/Comment/Editar.vue'
 import Login from '@/pages/Login.vue'
 import Register from '@/pages/Register.vue'
+import NotFound from '@/pages/NotFound.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
+      name: 'Dashboard',
+      component: Dashboard,
+      alias: '/dashboard',
+    },
+    {
+      path: '/login',
       name: 'Login',
       component: Login
     },
@@ -30,11 +37,6 @@ const router = createRouter({
       component: Register
     },
     {
-      path: '/Dashboard',
-      name: 'Dashboard',
-      component: Dashboard,
-    },
-    {
       path: '/projects/listar',
       name: 'Projects-listar',
       component: ListarProjeto
@@ -42,13 +44,15 @@ const router = createRouter({
     {
       path: '/projects/criar',
       name: 'Projects-criar',
-      component: CriarProjeto
+      component: CriarProjeto,
+      meta: { requiresAuth: true },
     },
     {
       path: '/projects/editar/:id',
       name: 'Projects-editar',
       component: EditarProjeto,
-      props: true
+      props: true,
+      meta: { requiresAuth: true },
     },
     {
       path: '/sprint/listar/:projectId', 
@@ -60,19 +64,22 @@ const router = createRouter({
       path: '/members/listar/:projectId',
       name: 'Members-listar',
       component: ListarMembrosProjeto,
-      props: true
+      props: true,
+      meta: { requiresAuth: true },
     },
     {
       path: '/sprint/criar/:projectId',
       name: 'Sprint-criar',
       component: CriarSprint,
-      props: true
+      props: true,
+      meta: { requiresAuth: true },
     },
     {
       path: '/sprint/editar/:sprintId',
       name: 'Sprint-editar',
       component: EditarSprint,
-      props: true
+      props: true,
+      meta: { requiresAuth: true },
     },
     {
       path: '/tarefa/listar/:sprintId',
@@ -84,13 +91,15 @@ const router = createRouter({
       path: '/tarefa/criar/:sprintId',
       name: 'Tarefa-criar',
       component: CriarTarefa,
-      props: true
+      props: true,
+      meta: { requiresAuth: true },
     },
     {
       path: '/tarefa/editar/:tarefaId',
       name: 'Tarefa-editar',
       component: EditarTarefa,
-      props: true
+      props: true,
+      meta: { requiresAuth: true },
     },
     {
       path: '/comentario/listar/:tarefaId',
@@ -102,15 +111,26 @@ const router = createRouter({
       path: '/comentario/criar/:tarefaId',
       name: 'Comentario-criar',
       component: CriarComentario,
-      props: true
+      props: true,
+      meta: { requiresAuth: true },
     },
     {
       path: '/comentario/editar/:comentarioId',
       name: 'Comentario-editar',
       component: EditarComentario,
-      props: true
+      props: true,
+      meta: { requiresAuth: true },
     },
   ],
+})
+
+router.beforeEach((to) => {
+  if (to.meta?.requiresAuth) {
+    const token = localStorage.getItem('jwt')
+    if (!token) {
+      return { name: 'Login' }
+    }
+  }
 })
 
 export default router
