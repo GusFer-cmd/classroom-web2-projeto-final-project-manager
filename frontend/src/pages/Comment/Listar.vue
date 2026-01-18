@@ -4,6 +4,8 @@ import TarefaNote from '@/components/TarefaNote.vue';
 import { onMounted, ref } from 'vue';
 import { CommentService } from '../../services/comment/comment.service';
 import { TaskService } from '../../services/task/task.service';
+import { useAuthStore } from '@/store/auth';
+import { storeToRefs } from 'pinia';
 
 const props = defineProps({
     tarefaId: {
@@ -14,6 +16,8 @@ const props = defineProps({
 const comments = ref([]);
 const task = ref(null);
 const error = ref("");
+const auth = useAuthStore();
+const { isAuthenticated } = storeToRefs(auth);
 
 onMounted(async () => {
     try {
@@ -31,7 +35,7 @@ onMounted(async () => {
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <p class="text-4xl font-bold text-black">Comentarios da Tarefa {{ tarefaId }}</p>
-                <button>
+                <button v-if="isAuthenticated">
                     <router-link
                         :to="{ name: 'Comentario-criar', params: { tarefaId: tarefaId } }"
                         class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 my-4 rounded-full text-sm shadow-sm transition"

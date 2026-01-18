@@ -1,6 +1,8 @@
 <script setup>
 import { UserService } from '@/services/user/user.service';
 import { onMounted } from 'vue';
+import { useAuthStore } from '@/store/auth';
+import { storeToRefs } from 'pinia';
 
 const props = defineProps({
   comment: {
@@ -20,6 +22,9 @@ async function loadAuthor(){
 onMounted(() => {
   loadAuthor();
 });
+
+const auth = useAuthStore();
+const { isAuthenticated } = storeToRefs(auth);
 
 </script>
 
@@ -47,6 +52,7 @@ onMounted(() => {
       <span>{{ props.comment.createdAt?.slice(0, 10) }}</span>
       <div class="flex gap-2">
         <router-link
+          v-if="isAuthenticated"
           :to="{ name: 'Comentario-editar', params: { comentarioId: Number(props.comment.id) } }"
           class="px-2 py-1 bg-yellow-200 hover:bg-yellow-300 rounded-md text-gray-700 shadow-sm transition"
         >

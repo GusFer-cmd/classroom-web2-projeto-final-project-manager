@@ -17,7 +17,7 @@ const router = useRouter();
 const errors = ref({});
 
 function goBack() {
-    router.push("/Dashboard")
+    router.push("/")
 }
 
 async function handleSubmit(payload) {

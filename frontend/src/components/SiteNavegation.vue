@@ -1,8 +1,12 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/auth'
+import { storeToRefs } from 'pinia'
 
 const router = useRouter()
+const auth = useAuthStore()
+const { isAuthenticated } = storeToRefs(auth)
 
 const mobileOpen = ref(false)
 const dropdownOpen = ref(false)
@@ -15,8 +19,7 @@ function toggleDropdown() {
 }
 
 function logout() {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
+  auth.logout()
 
   router.push({ name: 'Login' })
 
@@ -38,7 +41,7 @@ function logout() {
 
       <ul class="hidden md:flex gap-6 flex-1 justify-start items-center ml-6">
         <li>
-          <router-link to="/Dashboard" class="text-white/95 font-medium hover:underline">
+          <router-link to="/" class="text-white/95 font-medium hover:underline">
             Dashboard
           </router-link>
         </li>
@@ -80,12 +83,21 @@ function logout() {
 
       <div class="flex items-center gap-3 ml-auto">
         <button
+          v-if="isAuthenticated"
           @click="logout"
           class="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-lg
                  bg-red-500 hover:bg-red-600 transition font-medium text-white"
         >
           Logout
         </button>
+        <router-link
+          v-else
+          to="/login"
+          class="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-lg
+                 bg-white text-blue-600 hover:bg-blue-50 transition font-medium"
+        >
+          Login
+        </router-link>
 
         <button
           @click="toggleMobile"
@@ -130,12 +142,21 @@ function logout() {
 
               <div class="pt-4 border-t mt-1.5 border-white/20">
                 <button
+                  v-if="isAuthenticated"
                   @click="logout"
                   class="w-full text-left text-lg font-medium
                     text-red-400 hover:text-red-300"
                 >
                   Logout
                 </button>
+                <router-link
+                  v-else
+                  to="/login"
+                  @click="toggleMobile"
+                  class="block text-lg font-medium text-blue-300 hover:text-blue-200"
+                >
+                  Login
+                </router-link>
               </div>
 
               <transition name="slide">

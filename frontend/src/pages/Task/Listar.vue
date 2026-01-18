@@ -4,6 +4,8 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { TaskService } from '../../services/task/task.service';
 import { SprintService } from '../../services/sprint/sprint.service';
+import { useAuthStore } from '@/store/auth';
+import { storeToRefs } from 'pinia';
 
 const props = defineProps({
     sprintId: {
@@ -13,6 +15,8 @@ const props = defineProps({
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
+const { isAuthenticated } = storeToRefs(auth);
 
 const sprintId = Number(route.params.sprintId);
 
@@ -26,6 +30,7 @@ const sprint = ref({
 const tasks = ref([]);
 
 async function handleDelete(id) {
+  if (!isAuthenticated.value) return;
 
   const confirmed = confirm('Deseja realmente excluir está tarefa?')
   if (!confirmed) return
@@ -64,7 +69,7 @@ onMounted(async () => {
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
                 <p class="text-4xl font-bold text-black">Tarefas da Sprint {{ sprintId }}</p>
-                <button>
+                <button v-if="isAuthenticated">
                     <router-link
                         :to="{ name: 'Tarefa-criar', params: { sprintId: sprintId } }"
                         class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 my-4 rounded-full text-sm shadow-sm transition"
@@ -109,6 +114,7 @@ onMounted(async () => {
                                 </router-link>
 
                                 <router-link
+                                    v-if="isAuthenticated"
                                     :to="{ name: 'Tarefa-editar', params: { tarefaId: Number(task.id) } }"
                                     class="flex items-center justify-center w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-sm transition"
                                     title="Editar"
@@ -117,7 +123,8 @@ onMounted(async () => {
                                 </router-link>
 
                                 <button
-                                    @click="handleDelete(task.id)" 
+                                    v-if="isAuthenticated"
+                                    @click="handleDelete(task.id)"
                                     class="flex items-center justify-center w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-sm transition"
                                     title="Excluir"
                                 >

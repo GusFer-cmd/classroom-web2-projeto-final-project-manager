@@ -21,7 +21,7 @@ async function handleSubmit() {
     })
 
     auth.setAuth(response.data.token, response.data.user)
-    router.push('/Dashboard')
+    router.push('/')
   } catch (err) {
     error.value = 'Email ou senha invalidos.'
   }
@@ -71,6 +71,12 @@ async function handleSubmit() {
               class="block w-full text-center rounded-lg border border-blue-600 bg-white text-blue-600 font-semibold py-2 hover:bg-blue-50 transition"
           >
             Registrar
+          </router-link>
+          <router-link
+              to="/"
+              class="block w-full text-center rounded-lg border border-slate-300 bg-white text-slate-700 font-semibold py-2 hover:bg-slate-50 transition"
+          >
+            Ver projetos publicos
           </router-link>
         </div>
       </form>
